@@ -42,7 +42,8 @@ public class Main {
 //        }
 
 //        doit();
-        stereophile();
+        stereophile("https://www.stereophile.com/content/recommended-components-fall-2021-edition-loudspeaker-systems");
+        stereophile("https://www.stereophile.com/content/recommended-components-fall-2021-edition-integrated-amplifiers-receivers");
 
         Instant end = Instant.now();
         System.out.println("ran in " + Duration.between(start, end).toSeconds() + " seconds.");
@@ -162,21 +163,26 @@ public class Main {
         return sb.toString();
     }
 
-    private static void stereophile() throws IOException {
+    private static void stereophile(String urlString) throws IOException {
 
-        var url = new URL("https://www.stereophile.com/content/recommended-components-fall-2021-edition-loudspeaker-systems");
+        var url = new URL(urlString);
         try (var br = new BufferedReader(new InputStreamReader(url.openStream()))) {
 
             String line;
 
             var sb = new StringBuilder();
             boolean newSection = false;
+            Map<String, StringBuilder> budgetItems = new LinkedHashMap<>();
+            Map<String, StringBuilder> starredItems = new LinkedHashMap<>();
+            String sectionName = "";
             while ((line = br.readLine()) != null) {
 
                 if (line.startsWith("<span class='product_grade'>")) {
-                    String sectionName = line.substring(line.indexOf(">")+1, line.indexOf("</span>"));
+                    sectionName = line.substring(line.indexOf(">")+1, line.indexOf("</span>"));
                     newSection = true;
                     sb.append(sectionName).append(System.lineSeparator());
+                    budgetItems.put(sectionName, budgetItems.getOrDefault(sectionName, new StringBuilder()));
+                    starredItems.put(sectionName, starredItems.getOrDefault(sectionName, new StringBuilder()));
                     continue;
                 }
                 if (newSection && line.startsWith("<B>")) {
@@ -185,12 +191,32 @@ public class Main {
                     item = item.replace("&#9733", "[starred]");
                     sb.append(item).append(System.lineSeparator());
 
-
+                    if (item.contains("$$$")) {
+//                        System.out.println(" detected $$$ " + item);
+//                        System.out.println(" getting " + sectionName + " " +  budgetItems.get(sectionName));
+                        budgetItems.get(sectionName).append(System.lineSeparator()).append(item);
+                    }
+                    if (item.contains("starred")) {
+//                        System.out.println(" detected $$$ " + item);
+//                        System.out.println(" getting " + sectionName + " " +  budgetItems.get(sectionName));
+                        starredItems.get(sectionName).append(System.lineSeparator()).append(item);
+                    }
 //                    sb.append(System.lineSeparator());
                 }
             }
 
             System.out.println(sb);
+            System.out.println("======= budget items ==============");
+//            System.out.println(budgetItems);
+            for(Map.Entry<String, StringBuilder>  r : budgetItems.entrySet()) {
+                System.out.println(r.getKey() + " " + r.getValue().toString());
+            }
+
+            System.out.println("======= starred items ==============");
+//            System.out.println(budgetItems);
+            for(Map.Entry<String, StringBuilder>  r : starredItems.entrySet()) {
+                System.out.println(r.getKey() + " " + r.getValue().toString());
+            }
         }
 
 
